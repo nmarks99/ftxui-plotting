@@ -66,14 +66,13 @@ class PlotBase : public ComponentBase, public PlotOption {
     Element OnRender() override {
         auto can = canvas([&](Canvas &c) {
 
-	    constexpr int YTICKS_SPACING = 4;
-	    constexpr int XTICKS_SPACING = 18;
-
-	    auto yticks = arange(ymin(), ymax(), (ymax()-ymin())/c.height());
-	    std::reverse(yticks.begin(), yticks.end());
+	    constexpr int YTICKS_SPACING = 8;
+	    constexpr int XTICKS_SPACING = 12;
 
 	    // draw y ticks
-	    for (size_t i = 0; i < c.height(); i++) {
+	    auto yticks = arange(ymin(), ymax(), (ymax()-ymin())/c.height());
+	    std::reverse(yticks.begin(), yticks.end());
+	    for (size_t i = 0; i < c.height()-4; i++) {
 		if (i % YTICKS_SPACING == 0) {
 		    std::stringstream ss;
 		    ss << std::fixed << std::showpos << std::setprecision(2) << yticks.at(i);
@@ -86,9 +85,16 @@ class PlotBase : public ComponentBase, public PlotOption {
 	    constexpr int Y_AXIS_OFFSET = 14;
 
 	    // draw x ticks
+	    auto xticks = arange(xmin(), xmax(), (xmax()-xmin())/c.width());
+	    // std::reverse(xticks.begin(), xticks.end());
 	    for (size_t i = Y_AXIS_OFFSET-2; i < c.width(); i++) {
 		if (i % XTICKS_SPACING == 0) {
-		    c.DrawText(i, c.height()-2, "|");
+		    std::stringstream ss;
+		    ss << std::fixed << std::showpos << std::setprecision(2) << xticks.at(i);
+		    auto xtick = ss.str();
+		    std::replace(xtick.begin(), xtick.end(), '+', ' ');
+		    c.DrawText(i, c.height()-6, "   |");
+		    c.DrawText(i, c.height()-4, xtick);
 		}
 	    }
 
@@ -101,16 +107,6 @@ class PlotBase : public ComponentBase, public PlotOption {
 	    std::transform(y().begin(), y().end(), yout_.begin(), [&](auto v) {
 		return -static_cast<int>(linear_map(v, ymin(), ymax(), 0, c.height() - 5)) + c.height() - 5;
 	    });
-
-            // // remake integer data for drawing only when canvas is resized
-            // if (c.width() != canvas_width_last_ || c.height() != canvas_height_last_) {
-                // std::transform(x().begin(), x().end(), xout_.begin(), [&](auto v) {
-                    // return static_cast<int>(linear_map(v, xmin(), xmax(), 0, c.width()));
-                // });
-                // std::transform(y().begin(), y().end(), yout_.begin(), [&](auto v) {
-                    // return -static_cast<int>(linear_map(v, ymin(), ymax(), 0, c.height() - 4)) + c.height() - 4;
-                // });
-            // }
 
             // draw line plot
             for (size_t i = 0; i < x().size(); i++) {
