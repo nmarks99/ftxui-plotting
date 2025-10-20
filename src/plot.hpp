@@ -12,9 +12,17 @@ namespace ftxui {
 constexpr double scale_default_min = -std::numeric_limits<double>::infinity();
 constexpr double scale_default_max = -std::numeric_limits<double>::infinity();
 
-struct PlotOption {
+struct PlotSeries {
     Ref<std::vector<double>> x;
     Ref<std::vector<double>> y;
+    Color color;
+};
+
+
+struct PlotOption {
+    Ref<std::vector<PlotSeries>> data;
+    // Ref<std::vector<double>> x;
+    // Ref<std::vector<double>> y;
     Ref<double> xmin = scale_default_min;
     Ref<double> xmax = scale_default_max;
     Ref<double> ymin = scale_default_min;

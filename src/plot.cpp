@@ -50,17 +50,19 @@ namespace ftxui {
 class PlotBase : public ComponentBase, public PlotOption {
   public:
     PlotBase(PlotOption option) : PlotOption(std::move(option)) {
-        xout_.resize(x().size());
-        yout_.resize(y().size());
+	// TODO: This just autoscales to first series... okay?
+	auto [xtmp, ytmp, _] = data().at(0);
+        xout_.resize(xtmp().size());
+        yout_.resize(ytmp().size());
 
 	// auto-scale if limits are 0.0
 	if (xmin() == scale_default_min || xmax() == scale_default_max) {
-	    const auto xminmax = std::minmax_element(x().begin(), x().end());
+	    const auto xminmax = std::minmax_element(xtmp().begin(), xtmp().end());
 	    xmin = *xminmax.first;
 	    xmax = *xminmax.second;
 	}
 	if (ymin() == scale_default_min || ymax() == scale_default_max) {
-	    const auto yminmax = std::minmax_element(y().begin(), y().end());
+	    const auto yminmax = std::minmax_element(ytmp().begin(), ytmp().end());
 	    ymin = *yminmax.first;
 	    ymax = *yminmax.second;
 	}
@@ -70,6 +72,7 @@ class PlotBase : public ComponentBase, public PlotOption {
     Element OnRender() override {
         auto can = canvas([&](Canvas &c) {
 
+	    // TODO: abtract tick drawing/make separate function
 	    // draw y ticks
 	    auto num_yticks = (c.height()) / YTICKS_SPACING;
 	    auto yticks = linspace(ymin(), ymax(), num_yticks);
@@ -98,27 +101,28 @@ class PlotBase : public ComponentBase, public PlotOption {
 
 	    // TODO: this only needs to happen when something changes like
 	    // data, canvas size, or axis limits
-	    // remake integer data
-	    std::transform(x().begin(), x().end(), xout_.begin(), [&](auto v) {
-		return static_cast<int>(linear_map(v, xmin(), xmax(), 0+Y_AXIS_OFFSET, c.width()+0));
-	    });
-	    std::transform(y().begin(), y().end(), yout_.begin(), [&](auto v) {
-		return -static_cast<int>(linear_map(v, ymin(), ymax(), 0, c.height() - 10)) + c.height() - 10;
-	    });
+	    for (auto &[x, y, color] : *data) {
+		std::transform(x().begin(), x().end(), xout_.begin(), [&](auto v) {
+		    return static_cast<int>(linear_map(v, xmin(), xmax(), 0+Y_AXIS_OFFSET, c.width()+0));
+		});
+		std::transform(y().begin(), y().end(), yout_.begin(), [&](auto v) {
+		    return -static_cast<int>(linear_map(v, ymin(), ymax(), 0, c.height() - 10)) + c.height() - 10;
+		});
 
-            // draw line plot
-            for (size_t i = 0; i < x().size(); i++) {
-		c.DrawPoint(xout_.at(i), yout_.at(i), true, Color::LightSeaGreen);
-            }
+		// draw line plot
+		for (size_t i = 0; i < x().size(); i++) {
+		    c.DrawPoint(xout_.at(i), yout_.at(i), true, color);
+		}
+	    }
 
-            canvas_width_last_ = c.width();
-            canvas_height_last_ = c.height();
+            // canvas_width_last_ = c.width();
+            // canvas_height_last_ = c.height();
         });
         return can | flex;
     }
     std::vector<int> xout_, yout_;
-    double canvas_width_last_ = 0;
-    double canvas_height_last_ = 0;
+    // double canvas_width_last_ = 0;
+    // double canvas_height_last_ = 0;
 };
 
 Component Plot(PlotOption option) { return Make<PlotBase>(std::move(option)); }

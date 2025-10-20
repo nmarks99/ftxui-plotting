@@ -17,20 +17,26 @@ int main() {
     auto screen = ScreenInteractive::Fullscreen();
 
     // Create some data
-    auto x = arange(0, 2 * M_PI, 0.01);
-    std::vector<double> y(x.size());
-    std::transform(x.begin(), x.end(), y.begin(), [](double v) { return std::sin(v); });
+    auto x1 = arange(0, 2 * M_PI, 0.01);
+    std::vector<double> y1(x1.size());
+    std::transform(x1.begin(), x1.end(), y1.begin(), [](double v) { return std::sin(v); });
 
+    auto x2 = arange(0, 2 * M_PI, 0.01);
+    std::vector<double> y2(x2.size());
+    std::transform(x2.begin(), x2.end(), y2.begin(), [](double v) { return std::cos(v); });
+    std::vector<PlotSeries> data = {{x1, y1, Color::Blue}, {x2, y2, Color::Red}};
+
+    // variables for adjusting axis limits
     double ymin = -1.0;
     std::string ymin_str = std::to_string(ymin);
     double ymax = 1.0;
     std::string ymax_str = std::to_string(ymax);
-
     double xmin = 0.0;
     std::string xmin_str = std::to_string(xmin);
     double xmax = 2*M_PI;
     std::string xmax_str = std::to_string(xmax);
 
+    // Input components for axis limits
     auto ymin_inp = Input(InputOption{
 	.content = &ymin_str,
 	.multiline = false,
@@ -70,17 +76,15 @@ int main() {
 
     // Create the plot component
     PlotOption op;
-    op.x = x;
-    op.y = y;
+    op.data = &data;
     op.xmin = &xmin;
     op.xmax = &xmax;
     op.ymin = &ymin;
     op.ymax = &ymax;
     auto plot = Plot(op);
 
-    // // Main container to define interactivity of components
+    // Main container to define interactivity of components
     auto main_container = Container::Vertical({
-	// plot,
 	ymin_inp,
 	ymax_inp,
 	xmin_inp,
