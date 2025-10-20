@@ -10,16 +10,6 @@
 
 #include "plot.hpp"
 
-// std::vector<double> arange(double start, double stop, double step) {
-    // std::vector<double> out;
-    // double vi = start;
-    // while (vi <= stop) {
-        // out.push_back(vi);
-        // vi += step;
-    // }
-    // return out;
-// }
-
 using namespace ftxui;
 
 int main() {
