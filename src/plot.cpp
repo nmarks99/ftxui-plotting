@@ -1,11 +1,8 @@
+#include <ftxui/component/component.hpp>
+#include <ftxui/component/component_base.hpp>
 #include <ftxui/component/event.hpp>
-#include <ftxui/dom/node.hpp>
 
-#include "ftxui/component/component_base.hpp"
-#include "ftxui/component/loop.hpp"
-#include "ftxui/component/screen_interactive.hpp"
-#include "ftxui/dom/elements.hpp"
-
+#include <algorithm>
 #include <cassert>
 #include <string>
 #include <iomanip>
@@ -51,7 +48,7 @@ class PlotBase : public ComponentBase, public PlotOption {
   public:
     PlotBase(PlotOption option) : PlotOption(std::move(option)) {
 	// TODO: This just autoscales to first series... okay?
-	auto [xtmp, ytmp, _] = data().at(0);
+	auto [xtmp, ytmp, color, style] = data().at(0);
         xout_.resize(xtmp().size());
         yout_.resize(ytmp().size());
 
@@ -69,6 +66,41 @@ class PlotBase : public ComponentBase, public PlotOption {
     }
 
   private:
+
+    bool Focusable() const override { return true; }
+
+    // autosales to the first data series
+    void auto_scale() {
+	auto [xtmp, ytmp, color, style] = data().at(0);
+	const auto xminmax = std::minmax_element(xtmp().begin(), xtmp().end());
+	xmin() = *xminmax.first;
+	xmax() = *xminmax.second;
+	const auto yminmax = std::minmax_element(ytmp().begin(), ytmp().end());
+	ymin() = *yminmax.first;
+	ymax() = *yminmax.second;
+    }
+
+    bool OnEvent(Event event) override {
+	if (event.is_mouse()
+	    && event.mouse().button == Mouse::Left
+	    && event.mouse().motion == Mouse::Pressed
+	    && box_.Contain(event.mouse().x, event.mouse().y)) {
+	    TakeFocus();
+	    return true;
+	}
+
+	if (!Focused()) {
+	    return false;
+	}
+
+	if (event == Event::Character('r')) {
+	    auto_scale();
+	    return true;
+	}
+
+	return false;
+    }
+
     Element OnRender() override {
         auto can = canvas([&](Canvas &c) {
 
@@ -101,7 +133,7 @@ class PlotBase : public ComponentBase, public PlotOption {
 
 	    // TODO: this only needs to happen when something changes like
 	    // data, canvas size, or axis limits
-	    for (auto &[x, y, color] : *data) {
+	    for (auto &[x, y, color, style] : *data) {
 		std::transform(x().begin(), x().end(), xout_.begin(), [&](auto v) {
 		    return static_cast<int>(linear_map(v, xmin(), xmax(), 0+Y_AXIS_OFFSET, c.width()+0));
 		});
@@ -110,16 +142,24 @@ class PlotBase : public ComponentBase, public PlotOption {
 		});
 
 		// draw line plot
-		for (size_t i = 0; i < x().size(); i++) {
-		    c.DrawPoint(xout_.at(i), yout_.at(i), true, color);
+		if (style == SeriesStyle::Point) {
+		    for (size_t i = 0; i < x().size(); i++) {
+			c.DrawPoint(xout_.at(i), yout_.at(i), true, color);
+		    }
+		} else if (style == SeriesStyle::Block){
+		    for (size_t i = 0; i < x().size(); i++) {
+			c.DrawBlock(xout_.at(i), yout_.at(i), true, color);
+		    }
+		} else {
+		    throw std::runtime_error("Unsupported style");
 		}
 	    }
-
             // canvas_width_last_ = c.width();
             // canvas_height_last_ = c.height();
         });
-        return can | flex;
+        return can | flex | reflect(box_);
     }
+    Box box_;
     std::vector<int> xout_, yout_;
     // double canvas_width_last_ = 0;
     // double canvas_height_last_ = 0;

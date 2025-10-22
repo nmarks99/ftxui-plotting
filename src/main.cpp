@@ -17,23 +17,35 @@ int main() {
     auto screen = ScreenInteractive::Fullscreen();
 
     // Create some data
-    auto x1 = arange(0, 2 * M_PI, 0.01);
+    auto x1 = arange(0, 4 * M_PI, 0.01);
     std::vector<double> y1(x1.size());
-    std::transform(x1.begin(), x1.end(), y1.begin(), [](double v) { return std::sin(v); });
+    std::transform(x1.begin(), x1.end(), y1.begin(), [](double v) { return std::sin(v)*2; });
 
-    auto x2 = arange(0, 2 * M_PI, 0.01);
+    auto x2 = arange(0, 4 * M_PI, 0.01);
     std::vector<double> y2(x2.size());
     std::transform(x2.begin(), x2.end(), y2.begin(), [](double v) { return std::cos(v); });
-    std::vector<PlotSeries> data = {{x1, y1, Color::Blue}, {x2, y2, Color::Red}};
+    std::vector<PlotSeries> data = {
+	{x1, y1, Color::Blue},
+	{x2, y2, Color::Red}
+    };
 
-    // variables for adjusting axis limits
-    double ymin = -1.0;
+    // // variables for adjusting axis limits
+    // double ymin = -std::numeric_limits<double>::infinity();
+    // std::string ymin_str = std::to_string(ymin);
+    // double ymax = std::numeric_limits<double>::infinity();
+    // std::string ymax_str = std::to_string(ymax);
+    // double xmin = -std::numeric_limits<double>::infinity();
+    // std::string xmin_str = std::to_string(xmin);
+    // double xmax = std::numeric_limits<double>::infinity();
+    // std::string xmax_str = std::to_string(xmax);
+
+    double ymin = -5.0;
     std::string ymin_str = std::to_string(ymin);
-    double ymax = 1.0;
+    double ymax = 5.0;
     std::string ymax_str = std::to_string(ymax);
     double xmin = 0.0;
     std::string xmin_str = std::to_string(xmin);
-    double xmax = 2*M_PI;
+    double xmax = 20.0;
     std::string xmax_str = std::to_string(xmax);
 
     // Input components for axis limits
@@ -85,6 +97,7 @@ int main() {
 
     // Main container to define interactivity of components
     auto main_container = Container::Vertical({
+	plot,
 	ymin_inp,
 	ymax_inp,
 	xmin_inp,
@@ -94,7 +107,7 @@ int main() {
     // Main renderer to define visual layout of components and elements
     auto main_renderer = Renderer(main_container, [&] {
 	return vbox({
-	    plot->Render() | border,
+	    plot->Render() | (border | (plot->Active() ? color(Color::LightSkyBlue1) : color(Color::White))),
 	    vbox({
 		hbox({
 		    text("X Range: "),
