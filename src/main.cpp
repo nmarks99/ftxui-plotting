@@ -21,31 +21,21 @@ int main() {
     std::vector<double> y1(x1.size());
     std::transform(x1.begin(), x1.end(), y1.begin(), [](double v) { return std::sin(v)*2; });
 
-    auto x2 = arange(0, 6 * M_PI, 0.1);
+    auto x2 = arange(0, 8 * M_PI, 0.1);
     std::vector<double> y2(x2.size());
-    std::transform(x2.begin(), x2.end(), y2.begin(), [](double v) { return std::cos(v); });
+    std::transform(x2.begin(), x2.end(), y2.begin(), [](double v) { return 2.0/3.0*std::cos(v); });
     std::vector<PlotSeries> data = {
 	{x1, y1, Color::Blue},
-	{x2, y2, Color::Red}
+	{x2, y2, Color::Red, SeriesStyle::Block}
     };
 
-    // // variables for adjusting axis limits
-    // double ymin = -std::numeric_limits<double>::infinity();
-    // std::string ymin_str = std::to_string(ymin);
-    // double ymax = std::numeric_limits<double>::infinity();
-    // std::string ymax_str = std::to_string(ymax);
-    // double xmin = -std::numeric_limits<double>::infinity();
-    // std::string xmin_str = std::to_string(xmin);
-    // double xmax = std::numeric_limits<double>::infinity();
-    // std::string xmax_str = std::to_string(xmax);
-
-    double ymin = -5.0;
+    double ymin = -10.0;
     std::string ymin_str = std::to_string(ymin);
-    double ymax = 5.0;
+    double ymax = 10.0;
     std::string ymax_str = std::to_string(ymax);
     double xmin = 0.0;
     std::string xmin_str = std::to_string(xmin);
-    double xmax = 20.0;
+    double xmax = 50.0;
     std::string xmax_str = std::to_string(xmax);
 
     // Input components for axis limits

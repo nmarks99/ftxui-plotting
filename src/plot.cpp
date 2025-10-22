@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cassert>
 #include <string>
+#include <limits>
 #include <iomanip>
 
 #include "plot.hpp"
@@ -46,22 +47,7 @@ namespace ftxui {
 
 class PlotBase : public ComponentBase, public PlotOption {
   public:
-    PlotBase(PlotOption option) : PlotOption(std::move(option)) {
-	// TODO: This just autoscales to first series... okay?
-	auto [xtmp, ytmp, color, style] = data().at(0);
-
-	// auto-scale if limits are 0.0
-	if (xmin() == scale_default_min || xmax() == scale_default_max) {
-	    const auto xminmax = std::minmax_element(xtmp().begin(), xtmp().end());
-	    xmin = *xminmax.first;
-	    xmax = *xminmax.second;
-	}
-	if (ymin() == scale_default_min || ymax() == scale_default_max) {
-	    const auto yminmax = std::minmax_element(ytmp().begin(), ytmp().end());
-	    ymin = *yminmax.first;
-	    ymax = *yminmax.second;
-	}
-    }
+    PlotBase(PlotOption option) : PlotOption(std::move(option)) {}
 
   private:
 
@@ -155,8 +141,8 @@ class PlotBase : public ComponentBase, public PlotOption {
 			c.DrawPointLine(xout.at(i-1), yout.at(i-1), xout.at(i), yout.at(i), color);
 		    }
 		} else if (style == SeriesStyle::Block){
-		    for (size_t i = 0; i < x().size(); i++) {
-			c.DrawBlock(xout.at(i), yout.at(i), true, color);
+		    for (size_t i = 1; i < x().size()-1; i++) {
+			c.DrawBlockLine(xout.at(i-1), yout.at(i-1), xout.at(i), yout.at(i), color);
 		    }
 		} else {
 		    throw std::runtime_error("Unsupported style");
