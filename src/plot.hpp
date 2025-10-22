@@ -22,10 +22,10 @@ struct PlotSeries {
 
 struct PlotOption {
     Ref<std::vector<PlotSeries>> data;
-    Ref<double> xmin = scale_default_min;
-    Ref<double> xmax = scale_default_max;
-    Ref<double> ymin = scale_default_min;
-    Ref<double> ymax = scale_default_max;
+    Ref<double> xmin{scale_default_min};
+    Ref<double> xmax{scale_default_max};
+    Ref<double> ymin{scale_default_min};
+    Ref<double> ymax{scale_default_max};
 };
 
 Component Plot(PlotOption options = {});

@@ -67,15 +67,23 @@ class PlotBase : public ComponentBase, public PlotOption {
 
     bool Focusable() const override { return true; }
 
-    // autosales to the first data series
     void auto_scale() {
-	auto [xtmp, ytmp, color, style] = data().at(0);
-	const auto xminmax = std::minmax_element(xtmp().begin(), xtmp().end());
-	xmin() = *xminmax.first;
-	xmax() = *xminmax.second;
-	const auto yminmax = std::minmax_element(ytmp().begin(), ytmp().end());
-	ymin() = *yminmax.first;
-	ymax() = *yminmax.second;
+	xmin() = std::numeric_limits<double>::infinity();
+	xmax() = -std::numeric_limits<double>::infinity();
+	ymin() = std::numeric_limits<double>::infinity();
+	ymax() = -std::numeric_limits<double>::infinity();
+	for (const auto &[xtmp, ytmp, color, style] : data()) {
+	    if (!xtmp->empty()) {
+		auto [min_it, max_it] = std::minmax_element(xtmp->begin(), xtmp->end());
+		xmin() = std::min(*min_it, xmin());
+		xmax() = std::max(*max_it, xmax());
+	    }
+	    if (!ytmp->empty()) {
+		auto [min_it, max_it] = std::minmax_element(ytmp->begin(), ytmp->end());
+		ymin() = std::min(*min_it, ymin());
+		ymax() = std::max(*max_it, ymax());
+	    }
+	}
     }
 
     bool OnEvent(Event event) override {
