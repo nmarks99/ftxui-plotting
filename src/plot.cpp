@@ -49,8 +49,6 @@ class PlotBase : public ComponentBase, public PlotOption {
     PlotBase(PlotOption option) : PlotOption(std::move(option)) {
 	// TODO: This just autoscales to first series... okay?
 	auto [xtmp, ytmp, color, style] = data().at(0);
-        xout_.resize(xtmp().size());
-        yout_.resize(ytmp().size());
 
 	// auto-scale if limits are 0.0
 	if (xmin() == scale_default_min || xmax() == scale_default_max) {
@@ -134,21 +132,23 @@ class PlotBase : public ComponentBase, public PlotOption {
 	    // TODO: this only needs to happen when something changes like
 	    // data, canvas size, or axis limits
 	    for (auto &[x, y, color, style] : *data) {
-		std::transform(x().begin(), x().end(), xout_.begin(), [&](auto v) {
+		std::vector<int> xout(x().size());
+		std::vector<int> yout(y().size());
+		std::transform(x().begin(), x().end(), xout.begin(), [&](auto v) {
 		    return static_cast<int>(linear_map(v, xmin(), xmax(), 0+Y_AXIS_OFFSET, c.width()+0));
 		});
-		std::transform(y().begin(), y().end(), yout_.begin(), [&](auto v) {
+		std::transform(y().begin(), y().end(), yout.begin(), [&](auto v) {
 		    return -static_cast<int>(linear_map(v, ymin(), ymax(), 0, c.height() - 10)) + c.height() - 10;
 		});
 
 		// draw line plot
 		if (style == SeriesStyle::Point) {
-		    for (size_t i = 0; i < x().size(); i++) {
-			c.DrawPoint(xout_.at(i), yout_.at(i), true, color);
+		    for (size_t i = 1; i < x().size()-1; i++) {
+			c.DrawPointLine(xout.at(i-1), yout.at(i-1), xout.at(i), yout.at(i), color);
 		    }
 		} else if (style == SeriesStyle::Block){
 		    for (size_t i = 0; i < x().size(); i++) {
-			c.DrawBlock(xout_.at(i), yout_.at(i), true, color);
+			c.DrawBlock(xout.at(i), yout.at(i), true, color);
 		    }
 		} else {
 		    throw std::runtime_error("Unsupported style");
@@ -160,7 +160,6 @@ class PlotBase : public ComponentBase, public PlotOption {
         return can | flex | reflect(box_);
     }
     Box box_;
-    std::vector<int> xout_, yout_;
     // double canvas_width_last_ = 0;
     // double canvas_height_last_ = 0;
 };

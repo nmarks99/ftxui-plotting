@@ -17,11 +17,11 @@ int main() {
     auto screen = ScreenInteractive::Fullscreen();
 
     // Create some data
-    auto x1 = arange(0, 4 * M_PI, 0.01);
+    auto x1 = arange(0, 4 * M_PI, 0.1);
     std::vector<double> y1(x1.size());
     std::transform(x1.begin(), x1.end(), y1.begin(), [](double v) { return std::sin(v)*2; });
 
-    auto x2 = arange(0, 4 * M_PI, 0.01);
+    auto x2 = arange(0, 6 * M_PI, 0.1);
     std::vector<double> y2(x2.size());
     std::transform(x2.begin(), x2.end(), y2.begin(), [](double v) { return std::cos(v); });
     std::vector<PlotSeries> data = {
