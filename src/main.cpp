@@ -2,6 +2,7 @@
 #include <ftxui/component/event.hpp>
 #include <ftxui/dom/node.hpp>
 #include <string>
+#include <iostream>
 
 #include "ftxui/component/component.hpp"
 #include "ftxui/component/component_base.hpp"
@@ -12,6 +13,8 @@
 
 using namespace ftxui;
 
+using PlotData = std::vector<PlotSeries>;
+
 int main() {
 
     auto screen = ScreenInteractive::Fullscreen();
@@ -19,23 +22,51 @@ int main() {
     // Create some data
     auto x1 = arange(0, 4 * M_PI, 0.1);
     std::vector<double> y1(x1.size());
-    std::transform(x1.begin(), x1.end(), y1.begin(), [](double v) { return std::sin(v)*2; });
+    std::transform(x1.begin(), x1.end(), y1.begin(), [](double v) { return 2*std::sin(v); });
+    Color color1 = Color::Red;
 
     auto x2 = arange(0, 8 * M_PI, 0.1);
     std::vector<double> y2(x2.size());
     std::transform(x2.begin(), x2.end(), y2.begin(), [](double v) { return 2.0/3.0*std::cos(v); });
-    std::vector<PlotSeries> data = {
-	{x1, y1, Color::Blue},
-	{x2, y2, Color::Red, SeriesStyle::Block}
+    Color color2 = Color::Blue;
+
+    PlotData data = {
+	{x1, y1, &color1},
+	{x2, y2, color2}
     };
 
-    double ymin = -10.0;
+    // Color selector
+    std::vector<std::string> color1_entries{"Red", "Orange", "Purple", "Green"};
+    int color1_choice = 0;
+    auto color1_dropdown_op = DropdownOption{};
+    color1_dropdown_op.radiobox.entries = color1_entries;
+    color1_dropdown_op.radiobox.selected = &color1_choice;
+    color1_dropdown_op.radiobox.on_change = [&](){
+	switch (color1_choice) {
+	    case 0:
+		color1 = Color::Red;
+		break;
+	    case 1:
+		color1 = Color::Orange1;
+		break;
+	    case 2:
+		color1 = Color::Purple;
+		break;
+	    case 3:
+		color1 = Color::Green;
+		break;
+	}
+    };
+    auto color1_menu = Dropdown(color1_dropdown_op);
+
+    // axis limits
+    double ymin = 0.0;
     std::string ymin_str = std::to_string(ymin);
-    double ymax = 10.0;
+    double ymax = 0.0;
     std::string ymax_str = std::to_string(ymax);
     double xmin = 0.0;
     std::string xmin_str = std::to_string(xmin);
-    double xmax = 50.0;
+    double xmax = 0.0;
     std::string xmax_str = std::to_string(xmax);
 
     // Input components for axis limits
@@ -85,34 +116,54 @@ int main() {
     op.ymax = &ymax;
     auto plot = Plot(op);
 
+    // autosclae button
+    auto button_op = ButtonOption{};
+    button_op.label = "Auto-scale";
+    button_op.on_click = [&](){
+	plot->TakeFocus();
+	plot->OnEvent(Event::Character('r'));
+    };
+    auto autoscale_button = Button(button_op);
+
     // Main container to define interactivity of components
     auto main_container = Container::Vertical({
 	plot,
 	ymin_inp,
 	ymax_inp,
 	xmin_inp,
-	xmax_inp
+	xmax_inp,
+	color1_menu,
+	autoscale_button
     });
 
     // Main renderer to define visual layout of components and elements
     auto main_renderer = Renderer(main_container, [&] {
 	return vbox({
 	    plot->Render() | (border | (plot->Active() ? color(Color::LightSkyBlue1) : color(Color::White))),
-	    vbox({
-		hbox({
-		    text("X Range: "),
-		    xmin_inp->Render() | size(WIDTH, EQUAL, 10) | bgcolor(Color::RGB(50,50,50)),
-		    separatorEmpty(),
-		    xmax_inp->Render() | size(WIDTH, EQUAL, 10),
+	    hbox({
+		vbox({
+		    text("Axis limits") | underlined,
+		    hbox({
+			text("X Range: "),
+			xmin_inp->Render() | size(WIDTH, EQUAL, 10) | bgcolor(Color::RGB(50,50,50)),
+			separatorEmpty(),
+			xmax_inp->Render() | size(WIDTH, EQUAL, 10) | bgcolor(Color::RGB(50,50,50)),
+		    }),
+		    hbox({
+			text("Y Range: "),
+			ymin_inp->Render() | size(WIDTH, EQUAL, 10) | bgcolor(Color::RGB(50,50,50)),
+			separatorEmpty(),
+			ymax_inp->Render() | size(WIDTH, EQUAL, 10) | bgcolor(Color::RGB(50,50,50)),
+		    }),
 		}),
-		separatorEmpty(),
-		hbox({
-		    text("Y Range: "),
-		    ymin_inp->Render() | size(WIDTH, EQUAL, 10) | bgcolor(Color::RGB(50,50,50)),
-		    separatorEmpty(),
-		    ymax_inp->Render() | size(WIDTH, EQUAL, 10),
+		separator(),
+		vbox({
+		    text("Series 1") | underlined,
+		    color1_menu->Render(),
 		}),
-	    }) | border
+		separator(),
+		autoscale_button->Render() | size(HEIGHT, EQUAL, 1),
+	    }) | border | size(HEIGHT, EQUAL, 12),
 	});
     });
 

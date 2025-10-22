@@ -136,16 +136,14 @@ class PlotBase : public ComponentBase, public PlotOption {
 		});
 
 		// draw line plot
-		if (style == SeriesStyle::Point) {
+		if (style() == SeriesStyle::Point) {
 		    for (size_t i = 1; i < x().size()-1; i++) {
-			c.DrawPointLine(xout.at(i-1), yout.at(i-1), xout.at(i), yout.at(i), color);
+			c.DrawPointLine(xout.at(i-1), yout.at(i-1), xout.at(i), yout.at(i), color());
 		    }
-		} else if (style == SeriesStyle::Block){
+		} else if (style() == SeriesStyle::Block){
 		    for (size_t i = 1; i < x().size()-1; i++) {
-			c.DrawBlockLine(xout.at(i-1), yout.at(i-1), xout.at(i), yout.at(i), color);
+			c.DrawBlockLine(xout.at(i-1), yout.at(i-1), xout.at(i), yout.at(i), color());
 		    }
-		} else {
-		    throw std::runtime_error("Unsupported style");
 		}
 	    }
             // canvas_width_last_ = c.width();

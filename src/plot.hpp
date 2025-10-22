@@ -12,8 +12,8 @@ enum class SeriesStyle {Point, Block};
 struct PlotSeries {
     Ref<std::vector<double>> x;
     Ref<std::vector<double>> y;
-    Color color;
-    SeriesStyle style = SeriesStyle::Point;
+    Ref<Color> color;
+    Ref<SeriesStyle> style = SeriesStyle::Point;
 };
 
 struct PlotOption {
