@@ -2,7 +2,6 @@
 #include <ftxui/component/event.hpp>
 #include <ftxui/dom/node.hpp>
 #include <string>
-#include <iostream>
 
 #include "ftxui/component/component.hpp"
 #include "ftxui/component/component_base.hpp"
@@ -38,10 +37,10 @@ int main() {
     // Color selector
     std::vector<std::string> color1_entries{"Red", "Orange", "Purple", "Green"};
     int color1_choice = 0;
-    auto color1_dropdown_op = DropdownOption{};
-    color1_dropdown_op.radiobox.entries = color1_entries;
-    color1_dropdown_op.radiobox.selected = &color1_choice;
-    color1_dropdown_op.radiobox.on_change = [&](){
+    auto color1_radio_op = RadioboxOption{};
+    color1_radio_op.entries = color1_entries;
+    color1_radio_op.selected = &color1_choice;
+    color1_radio_op.on_change = [&](){
 	switch (color1_choice) {
 	    case 0:
 		color1 = Color::Red;
@@ -57,9 +56,11 @@ int main() {
 		break;
 	}
     };
-    auto color1_menu = Dropdown(color1_dropdown_op);
+    auto color1_menu = Radiobox(color1_radio_op);
 
     // axis limits
+    // TODO: synchronize doubles and strings here
+    // Idea: catch auto-scale event and do to_string then?
     double ymin = 0.0;
     std::string ymin_str = std::to_string(ymin);
     double ymax = 0.0;
@@ -117,7 +118,7 @@ int main() {
     auto plot = Plot(op);
 
     // autosclae button
-    auto button_op = ButtonOption{};
+    auto button_op = ButtonOption::Simple();
     button_op.label = "Auto-scale";
     button_op.on_click = [&](){
 	plot->TakeFocus();
@@ -155,14 +156,14 @@ int main() {
 			separatorEmpty(),
 			ymax_inp->Render() | size(WIDTH, EQUAL, 10) | bgcolor(Color::RGB(50,50,50)),
 		    }),
+		    separatorEmpty(),
+		    autoscale_button->Render() | size(WIDTH, EQUAL, 12),
 		}),
 		separator(),
 		vbox({
 		    text("Series 1") | underlined,
 		    color1_menu->Render(),
 		}),
-		separator(),
-		autoscale_button->Render() | size(HEIGHT, EQUAL, 1),
 	    }) | border | size(HEIGHT, EQUAL, 12),
 	});
     });
