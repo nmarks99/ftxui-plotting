@@ -30,11 +30,11 @@ int main() {
     Color color2 = Color::Blue;
 
     PlotData data = {
-	{x1, y1, &color1},
-	{x2, y2}
+	{&x1, &y1, &color1},
+	{&x2, &y2}
     };
 
-    // Color selector
+    // Color selector for series 1
     std::vector<std::string> color1_entries{"Red", "Orange", "Purple", "Green"};
     int color1_choice = 0;
     auto color1_radio_op = RadioboxOption{};
@@ -57,6 +57,14 @@ int main() {
 	}
     };
     auto color1_menu = Radiobox(color1_radio_op);
+
+    double lastx = x1.back();
+    double lasty = y1.back();
+    for (size_t i = 0; i < 50; i++) {
+	lastx += 0.1;
+	x1.push_back(lastx);
+	y1.push_back(lasty);
+    }
 
     // axis limits
     // TODO: synchronize doubles and strings here
@@ -166,6 +174,9 @@ int main() {
 	    }) | border | size(HEIGHT, EQUAL, 12),
 	});
     });
+
+    // Auto-scale on start
+    plot->OnEvent(PlotEvent::AutoScale);
 
     screen.Loop(main_renderer);
 
