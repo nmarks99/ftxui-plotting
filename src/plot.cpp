@@ -45,6 +45,7 @@ constexpr int XTICKS_SPACING = 12;
 
 namespace ftxui {
 
+
 class PlotBase : public ComponentBase, public PlotOption {
   public:
     PlotBase(PlotOption option) : PlotOption(std::move(option)) {}
@@ -81,11 +82,7 @@ class PlotBase : public ComponentBase, public PlotOption {
 	    return true;
 	}
 
-	if (!Focused()) {
-	    return false;
-	}
-
-	if (event == Event::Character('r')) {
+	if (event == PlotEvent::AutoScale) {
 	    auto_scale();
 	    return true;
 	}
@@ -135,6 +132,7 @@ class PlotBase : public ComponentBase, public PlotOption {
 		    return -static_cast<int>(linear_map(v, ymin(), ymax(), 0, c.height() - 10)) + c.height() - 10;
 		});
 
+		// TODO: user should be able to request a scatter plot
 		// draw line plot
 		if (style() == SeriesStyle::Point) {
 		    for (size_t i = 1; i < x().size()-1; i++) {

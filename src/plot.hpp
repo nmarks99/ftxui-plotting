@@ -1,5 +1,6 @@
-#include "ftxui/component/component_base.hpp"
-#include "ftxui/screen/color.hpp"
+#include <ftxui/component/component_base.hpp>
+#include <ftxui/component/event.hpp>
+#include <ftxui/screen/color.hpp>
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/util/ref.hpp>
 
@@ -7,12 +8,16 @@ std::vector<double> arange(double start, double stop, double step);
 
 namespace ftxui {
 
+namespace PlotEvent {
+    inline const ftxui::Event AutoScale = ftxui::Event::Special("PLOT_AUTOSCALE");
+}
+
 enum class SeriesStyle {Point, Block};
 
 struct PlotSeries {
     Ref<std::vector<double>> x;
     Ref<std::vector<double>> y;
-    Ref<Color> color;
+    Ref<Color> color = Color::RGB(0, 0, 255);
     Ref<SeriesStyle> style = SeriesStyle::Point;
 };
 

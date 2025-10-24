@@ -31,7 +31,7 @@ int main() {
 
     PlotData data = {
 	{x1, y1, &color1},
-	{x2, y2, color2}
+	{x2, y2}
     };
 
     // Color selector
@@ -117,12 +117,11 @@ int main() {
     op.ymax = &ymax;
     auto plot = Plot(op);
 
-    // autosclae button
+    // autoscale button
     auto button_op = ButtonOption::Simple();
-    button_op.label = "Auto-scale";
+    button_op.label = "Auto-Scale";
     button_op.on_click = [&](){
-	plot->TakeFocus();
-	plot->OnEvent(Event::Character('r'));
+	plot->OnEvent(PlotEvent::AutoScale);
     };
     auto autoscale_button = Button(button_op);
 
@@ -158,12 +157,12 @@ int main() {
 		    }),
 		    separatorEmpty(),
 		    autoscale_button->Render() | size(WIDTH, EQUAL, 12),
-		}),
+		}) | borderEmpty,
 		separator(),
 		vbox({
 		    text("Series 1") | underlined,
 		    color1_menu->Render(),
-		}),
+		}) | borderEmpty,
 	    }) | border | size(HEIGHT, EQUAL, 12),
 	});
     });
