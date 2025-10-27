@@ -7,8 +7,24 @@
 #include <string>
 #include <limits>
 #include <iomanip>
+#include <charconv>
+#include <optional>
 
 #include "plot.hpp"
+
+template <typename T>
+std::optional<T> get_as(const std::string &str) {
+    static_assert(std::is_same_v<T, int> || std::is_same_v<T, double>, "Invalid type T");
+    T value{};
+    auto first = str.data();
+    auto last = str.data() + str.size();
+    auto [ptr, err] = std::from_chars(first, last, value);
+    if (err == std::errc() && ptr == last) {
+	return value;
+    } else {
+	return std::nullopt;
+    }
+}
 
 std::vector<double> arange(double start, double stop, double step) {
     std::vector<double> out;
@@ -54,23 +70,46 @@ class PlotBase : public ComponentBase, public PlotOption {
 
     bool Focusable() const override { return true; }
 
+    void get_plot_limits_double() {
+	if (auto v = get_as<double>(xmin()); v.has_value()) {
+	    xmin_ = v.value();
+	}
+	if (auto v = get_as<double>(xmax()); v.has_value()) {
+	    xmax_ = v.value();
+	}
+	if (auto v = get_as<double>(ymin()); v.has_value()) {
+	    ymin_ = v.value();
+	}
+	if (auto v = get_as<double>(ymax()); v.has_value()) {
+	    ymax_ = v.value();
+	}
+    }
+
+    void set_plot_limits_string() {
+	xmin() = std::to_string(xmin_);
+	xmax() = std::to_string(xmax_);
+	ymin() = std::to_string(ymin_);
+	ymax() = std::to_string(ymax_);
+    }
+
     void auto_scale() {
-	xmin() = std::numeric_limits<double>::infinity();
-	xmax() = -std::numeric_limits<double>::infinity();
-	ymin() = std::numeric_limits<double>::infinity();
-	ymax() = -std::numeric_limits<double>::infinity();
+	xmin_ = std::numeric_limits<double>::infinity();
+	xmax_ = -std::numeric_limits<double>::infinity();
+	ymin_ = std::numeric_limits<double>::infinity();
+	ymax_ = -std::numeric_limits<double>::infinity();
 	for (const auto &[xtmp, ytmp, color, style] : data()) {
 	    if (!xtmp->empty()) {
 		auto [min_it, max_it] = std::minmax_element(xtmp->begin(), xtmp->end());
-		xmin() = std::min(*min_it, xmin());
-		xmax() = std::max(*max_it, xmax());
+		xmin_ = std::min(*min_it, xmin_);
+		xmax_ = std::max(*max_it, xmax_);
 	    }
 	    if (!ytmp->empty()) {
 		auto [min_it, max_it] = std::minmax_element(ytmp->begin(), ytmp->end());
-		ymin() = std::min(*min_it, ymin());
-		ymax() = std::max(*max_it, ymax());
+		ymin_ = std::min(*min_it, ymin_);
+		ymax_ = std::max(*max_it, ymax_);
 	    }
 	}
+	set_plot_limits_string();
     }
 
     bool OnEvent(Event event) override {
@@ -91,12 +130,13 @@ class PlotBase : public ComponentBase, public PlotOption {
     }
 
     Element OnRender() override {
+	get_plot_limits_double();
         auto can = canvas([&](Canvas &c) {
 
 	    // TODO: abtract tick drawing/make separate function
 	    // draw y ticks
 	    auto num_yticks = (c.height()) / YTICKS_SPACING;
-	    auto yticks = linspace(ymin(), ymax(), num_yticks);
+	    auto yticks = linspace(ymin_, ymax_, num_yticks);
 	    std::reverse(yticks.begin(), yticks.end());
 	    for (int i = 0; i < num_yticks; i++) {
 		std::stringstream ss;
@@ -110,7 +150,7 @@ class PlotBase : public ComponentBase, public PlotOption {
 
 	    // draw x ticks
 	    auto num_xticks = (c.width()) / XTICKS_SPACING;
-	    auto xticks = linspace(xmin(), xmax(), num_xticks);
+	    auto xticks = linspace(xmin_, xmax_, num_xticks);
 	    for (int i = 0; i < num_xticks; i++) {
 		std::stringstream ss;
 		ss << std::fixed << std::showpos << std::setprecision(2) << xticks.at(i);
@@ -126,10 +166,10 @@ class PlotBase : public ComponentBase, public PlotOption {
 		std::vector<int> xout(x().size());
 		std::vector<int> yout(y().size());
 		std::transform(x().begin(), x().end(), xout.begin(), [&](auto v) {
-		    return static_cast<int>(linear_map(v, xmin(), xmax(), 0+Y_AXIS_OFFSET, c.width()+0));
+		    return static_cast<int>(linear_map(v, xmin_, xmax_, 0+Y_AXIS_OFFSET, c.width()+0));
 		});
 		std::transform(y().begin(), y().end(), yout.begin(), [&](auto v) {
-		    return -static_cast<int>(linear_map(v, ymin(), ymax(), 0, c.height() - 10)) + c.height() - 10;
+		    return -static_cast<int>(linear_map(v, ymin_, ymax_, 0, c.height() - 10)) + c.height() - 10;
 		});
 
 		// TODO: user should be able to request a scatter plot
@@ -149,6 +189,10 @@ class PlotBase : public ComponentBase, public PlotOption {
         });
         return can | flex | reflect(box_);
     }
+    double xmin_ = 0.0;
+    double xmax_ = 0.0;
+    double ymin_ = 0.0;
+    double ymax_ = 0.0;
     Box box_;
     // double canvas_width_last_ = 0;
     // double canvas_height_last_ = 0;

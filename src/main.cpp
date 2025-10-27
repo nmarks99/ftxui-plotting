@@ -58,6 +58,7 @@ int main() {
     };
     auto color1_menu = Radiobox(color1_radio_op);
 
+    // Edit some data after creating the plot to demonstrate we can
     double lastx = x1.back();
     double lasty = y1.back();
     for (size_t i = 0; i < 50; i++) {
@@ -66,55 +67,22 @@ int main() {
 	y1.push_back(lasty);
     }
 
-    // axis limits
-    // TODO: synchronize doubles and strings here
-    // Idea: catch auto-scale event and do to_string then?
-    double ymin = 0.0;
-    std::string ymin_str = std::to_string(ymin);
-    double ymax = 0.0;
-    std::string ymax_str = std::to_string(ymax);
-    double xmin = 0.0;
-    std::string xmin_str = std::to_string(xmin);
-    double xmax = 0.0;
-    std::string xmax_str = std::to_string(xmax);
+    // Axis limits
+    std::string ymin;
+    std::string ymax;
+    std::string xmin;
+    std::string xmax;
 
-    // Input components for axis limits
-    auto ymin_inp = Input(InputOption{
-	.content = &ymin_str,
-	.multiline = false,
-	.on_change = [&]{
-	    try {
-		ymin = std::stod(ymin_str);
-	    } catch (...) {}
-	}
-    });
-    auto ymax_inp = Input(InputOption{
-	.content = &ymax_str,
-	.multiline = false,
-	.on_change = [&]{
-	    try {
-		ymax = std::stod(ymax_str);
-	    } catch (...) {}
-	}
-    });
-    auto xmin_inp = Input(InputOption{
-	.content = &xmin_str,
-	.multiline = false,
-	.on_change = [&]{
-	    try {
-		xmin = std::stod(xmin_str);
-	    } catch (...) {}
-	}
-    });
-    auto xmax_inp = Input(InputOption{
-	.content = &xmax_str,
-	.multiline = false,
-	.on_change = [&]{
-	    try {
-		xmax = std::stod(xmax_str);
-	    } catch (...) {}
-	}
-    });
+    auto make_input = [&](std::string &str){
+	auto op = InputOption{};
+	op.multiline = false;
+	op.content = &str;
+	return Input(op);
+    };
+    auto ymin_inp = make_input(ymin);
+    auto ymax_inp = make_input(ymax);
+    auto xmin_inp = make_input(xmin);
+    auto xmax_inp = make_input(xmax);
 
     // Create the plot component
     PlotOption op;
