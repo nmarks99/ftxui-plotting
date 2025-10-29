@@ -61,7 +61,6 @@ constexpr int XTICKS_SPACING = 12;
 
 namespace ftxui {
 
-
 class PlotBase : public ComponentBase, public PlotOption {
   public:
     PlotBase(PlotOption option) : PlotOption(std::move(option)) {}
@@ -129,26 +128,39 @@ class PlotBase : public ComponentBase, public PlotOption {
 	return false;
     }
 
-    Element OnRender() override {
-	get_plot_limits_double();
-        auto can = canvas([&](Canvas &c) {
+    int draw_ticks(Canvas &c) {
 
-	    // TODO: abtract tick drawing/make separate function
-	    // draw y ticks
+	int x_start = 0;
+	if (show_y_ticks()) {
 	    auto num_yticks = (c.height()) / YTICKS_SPACING;
-	    auto yticks = linspace(ymin_, ymax_, num_yticks);
-	    std::reverse(yticks.begin(), yticks.end());
-	    for (int i = 0; i < num_yticks; i++) {
+	    auto yticks_d = linspace(ymin_, ymax_, num_yticks);
+	    std::vector<std::string> yticks(yticks_d.size());
+	    std::transform(yticks_d.begin(), yticks_d.end(), yticks.begin(), [](auto s){
 		std::stringstream ss;
-		ss << std::fixed << std::showpos << std::setprecision(2) << yticks.at(i);
-		auto tick = ss.str();
-		std::replace(tick.begin(), tick.end(), '+', ' ');
-		c.DrawText(0, i*YTICKS_SPACING, tick + "-");
+		ss << std::fixed << std::showpos << std::setprecision(2) << s;
+		auto str = ss.str();
+		std::replace(str.begin(), str.end(), '+', ' ');
+		return str;
+	    });
+	    std::reverse(yticks.begin(), yticks.end());
+
+	    // draw the Y ticks
+	    for (int i = 0; i < num_yticks; i++) {
+		c.DrawText(0, i*YTICKS_SPACING, yticks.at(i) + "-");
 	    }
 
-	    constexpr int Y_AXIS_OFFSET = 14;
+	    // Compute the x offset
+	    auto longest_tick = std::max_element(yticks.begin(), yticks.end(), [](const std::string &a, const std::string &b){
+		return a.length() < b.length();
+	    });
+	    x_start = (longest_tick->length()+4)*2;
+	}
 
-	    // draw x ticks
+	// draw axis lines?
+	// c.DrawPointLine(x_start, 0, x_start, c.height());
+
+	if (show_x_ticks()) {
+	    // draw the X ticks
 	    auto num_xticks = (c.width()) / XTICKS_SPACING;
 	    auto xticks = linspace(xmin_, xmax_, num_xticks);
 	    for (int i = 0; i < num_xticks; i++) {
@@ -156,9 +168,20 @@ class PlotBase : public ComponentBase, public PlotOption {
 		ss << std::fixed << std::showpos << std::setprecision(2) << xticks.at(i);
 		auto tick = ss.str();
 		std::replace(tick.begin(), tick.end(), '+', ' ');
-		c.DrawText(i*XTICKS_SPACING+Y_AXIS_OFFSET-4, c.height()-4, tick);
-		c.DrawText(i*XTICKS_SPACING+Y_AXIS_OFFSET-4, c.height()-6, "  |");
+		c.DrawText(i*XTICKS_SPACING+x_start-4, c.height()-4, tick);
+		c.DrawText(i*XTICKS_SPACING+x_start-4, c.height()-6, "  |");
 	    }
+	}
+
+	return x_start;
+    }
+
+    Element OnRender() override {
+	get_plot_limits_double();
+
+        auto can = canvas([&](Canvas &c) {
+
+	    int x_plot_start = draw_ticks(c);
 
 	    // TODO: this only needs to happen when something changes like
 	    // data, canvas size, or axis limits
@@ -166,7 +189,7 @@ class PlotBase : public ComponentBase, public PlotOption {
 		std::vector<int> xout(x().size());
 		std::vector<int> yout(y().size());
 		std::transform(x().begin(), x().end(), xout.begin(), [&](auto v) {
-		    return static_cast<int>(linear_map(v, xmin_, xmax_, 0+Y_AXIS_OFFSET, c.width()+0));
+		    return static_cast<int>(linear_map(v, xmin_, xmax_, 0+x_plot_start, c.width()+0));
 		});
 		std::transform(y().begin(), y().end(), yout.begin(), [&](auto v) {
 		    return -static_cast<int>(linear_map(v, ymin_, ymax_, 0, c.height() - 10)) + c.height() - 10;

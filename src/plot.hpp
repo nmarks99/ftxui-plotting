@@ -27,6 +27,8 @@ struct PlotOption {
     StringRef xmax;
     StringRef ymin;
     StringRef ymax;
+    Ref<bool> show_x_ticks = true;
+    Ref<bool> show_y_ticks = true;
 };
 
 Component Plot(PlotOption options = {});
