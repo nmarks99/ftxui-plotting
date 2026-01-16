@@ -1,57 +1,57 @@
 #pragma once
 #include <ftxui/component/component_base.hpp>
 #include <ftxui/component/event.hpp>
-#include <ftxui/screen/color.hpp>
 #include <ftxui/dom/elements.hpp>
+#include <ftxui/screen/color.hpp>
 #include <ftxui/util/ref.hpp>
 
-#include <charconv>
 #include <algorithm>
 #include <cassert>
 #include <charconv>
+#include <cmath>
 #include <iomanip>
 #include <limits>
 #include <optional>
 #include <string>
-#include <cmath>
 
-namespace {
-    template <typename T> std::optional<T> get_as(const std::string &str) {
-	static_assert(std::is_same_v<T, int> || std::is_same_v<T, double>, "Invalid type T");
-	T value{};
-	auto first = str.data();
-	auto last = str.data() + str.size();
-	auto [ptr, err] = std::from_chars(first, last, value);
-	if (err == std::errc() && ptr == last) {
-	    return value;
-	} else {
-	    return std::nullopt;
-	}
+namespace ftxui::detail {
+template <typename T>
+inline std::optional<T> get_as(const std::string& str) {
+    static_assert(std::is_same_v<T, int> || std::is_same_v<T, double>, "Invalid type T");
+    T value{};
+    auto first = str.data();
+    auto last = str.data() + str.size();
+    auto [ptr, err] = std::from_chars(first, last, value);
+    if (err == std::errc() && ptr == last) {
+        return value;
+    } else {
+        return std::nullopt;
     }
-
-    static std::vector<double> linspace(double start, double stop, size_t num_points) {
-	std::vector<double> out(num_points);
-	const double step = (stop - start) / (num_points - 1);
-	double val = start;
-	for (size_t i = 0; i < num_points; i++) {
-	    out.at(i) = val;
-	    val += step;
-	}
-	return out;
-    }
-
-    static double linear_map(double value, double a1, double a2, double b1, double b2) {
-	if (a2 == a1) {
-	    return (b1 + b2) / 2;
-	}
-	const double m = (b2 - b1) / (a2 - a1);
-	const double b = b1 - m * a1;
-	return m * value + b;
-    }
-
-    constexpr int YTICKS_SPACING = 8;
-    constexpr int XTICKS_SPACING = 12;
 }
+
+inline std::vector<double> linspace(double start, double stop, size_t num_points) {
+    std::vector<double> out(num_points);
+    const double step = (stop - start) / (num_points - 1);
+    double val = start;
+    for (size_t i = 0; i < num_points; i++) {
+        out.at(i) = val;
+        val += step;
+    }
+    return out;
+}
+
+inline double linear_map(double value, double a1, double a2, double b1, double b2) {
+    if (a2 == a1) {
+        return (b1 + b2) / 2;
+    }
+    const double m = (b2 - b1) / (a2 - a1);
+    const double b = b1 - m * a1;
+    return m * value + b;
+}
+
+constexpr int YTICKS_SPACING = 8;
+constexpr int XTICKS_SPACING = 12;
+} // namespace ftxui::detail
 
 template <class Container>
 inline Container arange(double start, double stop, double step) {
@@ -67,15 +67,10 @@ inline Container arange(double start, double stop, double step) {
 namespace ftxui {
 
 namespace PlotEvent {
-    inline const ftxui::Event AutoScale = ftxui::Event::Special("PLOT_AUTOSCALE");
+inline const ftxui::Event AutoScale = ftxui::Event::Special("PLOT_AUTOSCALE");
 }
 
-enum class SeriesStyle {
-    PointLine,
-    BlockLine,
-    PointScatter,
-    BlockScatter
-};
+enum class SeriesStyle { PointLine, BlockLine, PointScatter, BlockScatter };
 
 template <class Container>
 struct PlotSeries {
@@ -114,16 +109,16 @@ class PlotBase : public ComponentBase, public PlotOption<Container> {
     bool Focusable() const override { return true; }
 
     void get_plot_limits_double() {
-        if (auto v = get_as<double>(this->xmin()); v.has_value()) {
+        if (auto v = detail::get_as<double>(this->xmin()); v.has_value()) {
             xmin_ = v.value();
         }
-        if (auto v = get_as<double>(this->xmax()); v.has_value()) {
+        if (auto v = detail::get_as<double>(this->xmax()); v.has_value()) {
             xmax_ = v.value();
         }
-        if (auto v = get_as<double>(this->ymin()); v.has_value()) {
+        if (auto v = detail::get_as<double>(this->ymin()); v.has_value()) {
             ymin_ = v.value();
         }
-        if (auto v = get_as<double>(this->ymax()); v.has_value()) {
+        if (auto v = detail::get_as<double>(this->ymax()); v.has_value()) {
             ymax_ = v.value();
         }
     }
@@ -140,7 +135,7 @@ class PlotBase : public ComponentBase, public PlotOption<Container> {
         xmax_ = -std::numeric_limits<double>::infinity();
         ymin_ = std::numeric_limits<double>::infinity();
         ymax_ = -std::numeric_limits<double>::infinity();
-        for (const auto &[xtmp, ytmp, color, style] : this->data()) {
+        for (const auto& [xtmp, ytmp, color, style] : this->data()) {
             if (!xtmp->empty()) {
                 auto [min_it, max_it] = std::minmax_element(xtmp->begin(), xtmp->end());
                 xmin_ = std::min(*min_it, xmin_);
@@ -157,8 +152,7 @@ class PlotBase : public ComponentBase, public PlotOption<Container> {
 
     bool OnEvent(Event event) override {
         if (event.is_mouse() && event.mouse().button == Mouse::Left &&
-            event.mouse().motion == Mouse::Pressed &&
-            box_.Contain(event.mouse().x, event.mouse().y)) {
+            event.mouse().motion == Mouse::Pressed && box_.Contain(event.mouse().x, event.mouse().y)) {
             TakeFocus();
             return true;
         }
@@ -171,12 +165,12 @@ class PlotBase : public ComponentBase, public PlotOption<Container> {
         return false;
     }
 
-    int draw_ticks(Canvas &c) {
+    int draw_ticks(Canvas& c) {
 
         int x_start = 0;
         if (this->show_y_ticks()) {
-            auto num_yticks = (c.height()) / YTICKS_SPACING;
-            auto yticks_d = linspace(ymin_, ymax_, num_yticks);
+            auto num_yticks = (c.height()) / detail::YTICKS_SPACING;
+            auto yticks_d = detail::linspace(ymin_, ymax_, num_yticks);
             std::vector<std::string> yticks(yticks_d.size());
             std::transform(yticks_d.begin(), yticks_d.end(), yticks.begin(), [](auto s) {
                 std::stringstream ss;
@@ -189,26 +183,26 @@ class PlotBase : public ComponentBase, public PlotOption<Container> {
 
             // draw the Y ticks
             for (int i = 0; i < num_yticks; i++) {
-                c.DrawText(0, i * YTICKS_SPACING, yticks.at(i) + "-");
+                c.DrawText(0, i * detail::YTICKS_SPACING, yticks.at(i) + "-");
             }
 
             // Compute the x offset
             auto longest_tick = std::max_element(
                 yticks.begin(), yticks.end(),
-                [](const std::string &a, const std::string &b) { return a.length() < b.length(); });
+                [](const std::string& a, const std::string& b) { return a.length() < b.length(); });
             x_start = (longest_tick->length() + 4) * 2;
         }
 
         if (this->show_x_ticks()) {
-            auto num_xticks = (c.width()) / XTICKS_SPACING;
-            auto xticks = linspace(xmin_, xmax_, num_xticks);
+            auto num_xticks = (c.width()) / detail::XTICKS_SPACING;
+            auto xticks = detail::linspace(xmin_, xmax_, num_xticks);
             for (int i = 0; i < num_xticks; i++) {
                 std::stringstream ss;
                 ss << std::fixed << std::showpos << std::setprecision(2) << xticks.at(i);
                 auto tick = ss.str();
                 std::replace(tick.begin(), tick.end(), '+', ' ');
-                c.DrawText(i * XTICKS_SPACING + x_start - 4, c.height() - 4, tick);
-                c.DrawText(i * XTICKS_SPACING + x_start - 4, c.height() - 6, "  |");
+                c.DrawText(i * detail::XTICKS_SPACING + x_start - 4, c.height() - 4, tick);
+                c.DrawText(i * detail::XTICKS_SPACING + x_start - 4, c.height() - 6, "  |");
             }
         }
 
@@ -218,65 +212,66 @@ class PlotBase : public ComponentBase, public PlotOption<Container> {
     Element OnRender() override {
         get_plot_limits_double();
 
-        auto can = canvas([&](Canvas &c) {
+        auto can = canvas([&](Canvas& c) {
             int x_plot_start = draw_ticks(c);
-	    int y_plot_start = c.height() - 8;
+            int y_plot_start = c.height() - 8;
 
             // TODO: this only needs to happen when something changes like
             // data, canvas size, or axis limits
-            for (auto &[x, y, color, style] : *this->data) {
+            for (auto& [x, y, color, style] : *this->data) {
                 std::vector<int> xout(x().size());
                 std::vector<int> yout(y().size());
                 std::transform(x().begin(), x().end(), xout.begin(), [&](auto v) {
-                    return static_cast<int>(linear_map(v, xmin_, xmax_, 0 + x_plot_start, c.width() + 0));
+                    return static_cast<int>(
+                        detail::linear_map(v, xmin_, xmax_, 0 + x_plot_start, c.width() + 0));
                 });
                 std::transform(y().begin(), y().end(), yout.begin(), [&](auto v) {
-		    if (std::isnan(v)) {
-			return std::numeric_limits<int>::max();
-		    }
-                    return -static_cast<int>(linear_map(v, ymin_, ymax_, 0, c.height() - 10)) + c.height() - 10;
+                    if (std::isnan(v)) {
+                        return std::numeric_limits<int>::max();
+                    }
+                    return -static_cast<int>(detail::linear_map(v, ymin_, ymax_, 0, c.height() - 10)) +
+                           c.height() - 10;
                 });
 
-
-		auto in_view = [&](int x, int y) -> bool{
-		    if (x == std::numeric_limits<int>::max() || y == std::numeric_limits<int>::max()) {
-			return false;
-		    }
-		    return (x >= x_plot_start) && (y < y_plot_start);
-		};
+                auto in_view = [&](int x, int y) -> bool {
+                    if (x == std::numeric_limits<int>::max() || y == std::numeric_limits<int>::max()) {
+                        return false;
+                    }
+                    return (x >= x_plot_start) && (y < y_plot_start);
+                };
 
                 // plot the data
                 switch (style()) {
                 case SeriesStyle::PointLine:
                     for (size_t i = 1; i < x().size() - 1; i++) {
-			if (!in_view(xout.at(i), yout.at(i)) || !in_view(xout.at(i-1), yout.at(i-1))) {
-			    continue;
-			}
-			c.DrawPointLine(xout.at(i - 1), yout.at(i - 1), xout.at(i), yout.at(i), color());
+                        if (!in_view(xout.at(i), yout.at(i)) || !in_view(xout.at(i - 1), yout.at(i - 1))) {
+                            continue;
+                        }
+                        c.DrawPointLine(xout.at(i - 1), yout.at(i - 1), xout.at(i), yout.at(i), color());
                     }
                     break;
                 case SeriesStyle::PointScatter:
                     for (size_t i = 0; i < x().size(); i++) {
-			if (!in_view(xout.at(i), yout.at(i))) {
-			    continue;
-			}
-			c.DrawPoint(xout.at(i), yout.at(i), true, color());
+                        if (!in_view(xout.at(i), yout.at(i))) {
+                            continue;
+                        }
+                        c.DrawPoint(xout.at(i), yout.at(i), true, color());
                     }
                     break;
                 case SeriesStyle::BlockLine:
                     for (size_t i = 1; i < x().size() - 1; i++) {
-			if (!in_view(xout.at(i), yout.at(i)) || !in_view(xout.at(i-1), yout.at(i-1))) {
-			    continue;
-			}
-			c.DrawBlockLine(xout.at(i - 1), yout.at(i - 1), xout.at(i), yout.at(i), color());
+                        if (!in_view(xout.at(i), yout.at(i)) || !in_view(xout.at(i - 1), yout.at(i - 1))) {
+                            continue;
+                        }
+                        c.DrawBlockLine(xout.at(i - 1), yout.at(i - 1), xout.at(i), yout.at(i), color());
                     }
                     break;
                 case SeriesStyle::BlockScatter:
                     for (size_t i = 0; i < x().size(); i++) {
-			if (!in_view(xout.at(i), yout.at(i))) {
-			    continue;
-			}
-			c.DrawBlock(xout.at(i), yout.at(i), true, color());
+                        if (!in_view(xout.at(i), yout.at(i))) {
+                            continue;
+                        }
+                        c.DrawBlock(xout.at(i), yout.at(i), true, color());
                     }
                     break;
                 }
@@ -287,6 +282,8 @@ class PlotBase : public ComponentBase, public PlotOption<Container> {
 };
 
 template <class Container>
-Component Plot(PlotOption<Container> option) { return Make<PlotBase<Container>>(std::move(option)); }
+Component Plot(PlotOption<Container> option) {
+    return Make<PlotBase<Container>>(std::move(option));
+}
 
 } // namespace ftxui
