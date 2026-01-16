@@ -1,4 +1,4 @@
-#include <cmath>
+#include <limits>
 #include <string>
 #include <deque>
 #include <random>
@@ -24,13 +24,15 @@ double get_random(double min_val, double max_val) {
     return distribution(generator);
 }
 
+
 int main() {
 
     auto screen = ScreenInteractive::Fullscreen();
 
     // Create some data
+    const auto NaN = std::numeric_limits<double>::quiet_NaN();
     std::deque<double> x1 = arange<std::deque<double>>(0, 5, 0.05);
-    std::deque<double> y1(x1.size(), 100.0); // hack
+    std::deque<double> y1(x1.size(), NaN);
     Color color1 = Color::Red;
 
     PlotData data = {
@@ -136,9 +138,6 @@ int main() {
 	    }) | border | size(HEIGHT, EQUAL, 12),
 	});
     });
-//
-    // // Auto-scale on start
-    // plot->OnEvent(PlotEvent::AutoScale);
 
     // main program loop
     constexpr int POLL_PERIOD_MS = 50;
