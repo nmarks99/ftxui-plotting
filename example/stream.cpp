@@ -1,6 +1,7 @@
 #include <cmath>
 #include <string>
 #include <deque>
+#include <thread>
 #include <random>
 
 #include <ftxui/component/event.hpp>
