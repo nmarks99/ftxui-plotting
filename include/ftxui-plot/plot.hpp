@@ -106,6 +106,9 @@ class PlotBase : public ComponentBase, public PlotOption<Container> {
     double ymax_ = 0.0;
     Box box_;
 
+    std::vector<int> xout_;
+    std::vector<int> yout_;
+
     bool Focusable() const override { return true; }
 
     void get_plot_limits_double() {
@@ -216,11 +219,13 @@ class PlotBase : public ComponentBase, public PlotOption<Container> {
             int x_plot_start = draw_ticks(c);
             int y_plot_start = c.height() - 8;
 
-            // TODO: this only needs to happen when something changes like
-            // data, canvas size, or axis limits
-            for (auto& [x, y, color, style] : *this->data) {
-                std::vector<int> xout(x().size());
-                std::vector<int> yout(y().size());
+            auto this_data = this->data();
+            for (size_t i = 0; i < this_data.size(); i++) {
+                auto& [x, y, color, style] = this_data[i];
+                xout_.resize(x().size());
+                yout_.resize(y().size());
+                auto& xout = xout_;
+                auto& yout = yout_;
                 std::transform(x().begin(), x().end(), xout.begin(), [&](auto v) {
                     return static_cast<int>(
                         detail::linear_map(v, xmin_, xmax_, 0 + x_plot_start, c.width() + 0));
@@ -243,35 +248,37 @@ class PlotBase : public ComponentBase, public PlotOption<Container> {
                 // plot the data
                 switch (style()) {
                 case SeriesStyle::PointLine:
-                    for (size_t i = 1; i < x().size() - 1; i++) {
-                        if (!in_view(xout.at(i), yout.at(i)) || !in_view(xout.at(i - 1), yout.at(i - 1))) {
+                    for (size_t i = 1; i < x().size(); i++) {
+                        if (!in_view(xout[i], yout[i]) || !in_view(xout[i - 1], yout[i - 1])
+                                || ((xout[i-1] == xout[i]) && (yout[i-1] == yout[i]))) {
                             continue;
                         }
-                        c.DrawPointLine(xout.at(i - 1), yout.at(i - 1), xout.at(i), yout.at(i), color());
+                        c.DrawPointLine(xout[i - 1], yout[i - 1], xout[i], yout[i], color());
                     }
                     break;
                 case SeriesStyle::PointScatter:
                     for (size_t i = 0; i < x().size(); i++) {
-                        if (!in_view(xout.at(i), yout.at(i))) {
+                        if (!in_view(xout[i], yout[i])) {
                             continue;
                         }
-                        c.DrawPoint(xout.at(i), yout.at(i), true, color());
+                        c.DrawPoint(xout[i], yout[i], true, color());
                     }
                     break;
                 case SeriesStyle::BlockLine:
-                    for (size_t i = 1; i < x().size() - 1; i++) {
-                        if (!in_view(xout.at(i), yout.at(i)) || !in_view(xout.at(i - 1), yout.at(i - 1))) {
+                    for (size_t i = 1; i < x().size(); i++) {
+                        if (!in_view(xout[i], yout[i]) || !in_view(xout[i - 1], yout[i - 1])
+                                || ((xout[i-1] == xout[i]) && (yout[i-1] == yout[i]))) {
                             continue;
                         }
-                        c.DrawBlockLine(xout.at(i - 1), yout.at(i - 1), xout.at(i), yout.at(i), color());
+                        c.DrawBlockLine(xout[i - 1], yout[i - 1], xout[i], yout[i], color());
                     }
                     break;
                 case SeriesStyle::BlockScatter:
                     for (size_t i = 0; i < x().size(); i++) {
-                        if (!in_view(xout.at(i), yout.at(i))) {
+                        if (!in_view(xout[i], yout[i])) {
                             continue;
                         }
-                        c.DrawBlock(xout.at(i), yout.at(i), true, color());
+                        c.DrawBlock(xout[i], yout[i], true, color());
                     }
                     break;
                 }

@@ -1,15 +1,18 @@
-#include <limits>
-#include <string>
 #include <deque>
-#include <thread>
+#include <limits>
 #include <random>
+#include <string>
+#include <thread>
+#include <chrono>
+#include <fstream>
+#include <iostream>
 
-#include <ftxui/component/event.hpp>
-#include <ftxui/dom/node.hpp>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_base.hpp>
+#include <ftxui/component/event.hpp>
 #include <ftxui/component/loop.hpp>
 #include <ftxui/component/screen_interactive.hpp>
+#include <ftxui/dom/node.hpp>
 
 #include <ftxui-plot/plot.hpp>
 
@@ -25,19 +28,21 @@ double get_random(double min_val, double max_val) {
     return distribution(generator);
 }
 
-
 int main() {
-
     auto screen = ScreenInteractive::Fullscreen();
 
     // Create some data
     const auto NaN = std::numeric_limits<double>::quiet_NaN();
+
     std::deque<double> x1 = arange<std::deque<double>>(0, 5, 0.05);
     std::deque<double> y1(x1.size(), NaN);
+    std::deque<double> y2(x1.size(), NaN);
     Color color1 = Color::Red;
+    Color color2 = Color::Orange1;
 
     PlotData data = {
-	{&x1, &y1, &color1, SeriesStyle::PointLine},
+        {&x1, &y1, &color1, SeriesStyle::PointLine},
+        {&x1, &y2, &color2, SeriesStyle::PointLine},
     };
 
     // Color selector for series 1
@@ -46,21 +51,21 @@ int main() {
     auto color1_radio_op = RadioboxOption{};
     color1_radio_op.entries = color1_entries;
     color1_radio_op.selected = &color1_choice;
-    color1_radio_op.on_change = [&](){
-	switch (color1_choice) {
-	    case 0:
-		color1 = Color::Red;
-		break;
-	    case 1:
-		color1 = Color::Orange1;
-		break;
-	    case 2:
-		color1 = Color::Purple;
-		break;
-	    case 3:
-		color1 = Color::Green;
-		break;
-	}
+    color1_radio_op.on_change = [&]() {
+        switch (color1_choice) {
+        case 0:
+            color1 = Color::Red;
+            break;
+        case 1:
+            color1 = Color::Orange1;
+            break;
+        case 2:
+            color1 = Color::Purple;
+            break;
+        case 3:
+            color1 = Color::Green;
+            break;
+        }
     };
     auto color1_menu = Radiobox(color1_radio_op);
 
@@ -70,11 +75,11 @@ int main() {
     std::string xmin = "0.0";
     std::string xmax = "5.0";
 
-    auto make_input = [&](std::string &str){
-	auto op = InputOption{};
-	op.multiline = false;
-	op.content = &str;
-	return Input(op);
+    auto make_input = [&](std::string& str) {
+        auto op = InputOption{};
+        op.multiline = false;
+        op.content = &str;
+        return Input(op);
     };
     auto ymin_inp = make_input(ymin);
     auto ymax_inp = make_input(ymax);
@@ -88,70 +93,73 @@ int main() {
     op.xmax = &xmax;
     op.ymin = &ymin;
     op.ymax = &ymax;
+    op.show_y_ticks = true;
+    op.show_x_ticks = true;
     auto plot = Plot(op);
 
     // autoscale button
     auto button_op = ButtonOption::Simple();
     button_op.label = "Auto-Scale";
-    button_op.on_click = [&](){
-	plot->OnEvent(PlotEvent::AutoScale);
-    };
+    button_op.on_click = [&]() { plot->OnEvent(PlotEvent::AutoScale); };
     auto autoscale_button = Button(button_op);
 
     // Main container to define interactivity of components
     auto main_container = Container::Vertical({
-	plot,
-	ymin_inp,
-	ymax_inp,
-	xmin_inp,
-	xmax_inp,
-	color1_menu,
-	autoscale_button
+        plot,
+        ymin_inp,
+        ymax_inp,
+        xmin_inp,
+        xmax_inp,
+        color1_menu,
+        autoscale_button
     });
 
     // Main renderer to define visual layout of components and elements
     auto main_renderer = Renderer(main_container, [&] {
-	return vbox({
-	    plot->Render() | (border | (plot->Active() ? color(Color::LightSkyBlue1) : color(Color::White))),
-	    hbox({
-		vbox({
-		    text("Axis limits") | underlined,
-		    hbox({
-			text("X Range: "),
-			xmin_inp->Render() | size(WIDTH, EQUAL, 10) | bgcolor(Color::RGB(50,50,50)),
-			separatorEmpty(),
-			xmax_inp->Render() | size(WIDTH, EQUAL, 10) | bgcolor(Color::RGB(50,50,50)),
-		    }),
-		    hbox({
-			text("Y Range: "),
-			ymin_inp->Render() | size(WIDTH, EQUAL, 10) | bgcolor(Color::RGB(50,50,50)),
-			separatorEmpty(),
-			ymax_inp->Render() | size(WIDTH, EQUAL, 10) | bgcolor(Color::RGB(50,50,50)),
-		    }),
-		    separatorEmpty(),
-		    autoscale_button->Render() | size(WIDTH, EQUAL, 12),
-		}) | borderEmpty,
-		separator(),
-		vbox({
-		    text("Series 1") | underlined,
-		    color1_menu->Render(),
-		}) | borderEmpty,
-	    }) | border | size(HEIGHT, EQUAL, 12),
-	});
+        return vbox({
+            plot->Render() | (border | (plot->Active() ? color(Color::LightSkyBlue1) : color(Color::White))),
+            hbox({
+                vbox({
+                    text("Axis limits") | underlined,
+                    hbox({
+                        text("X Range: "),
+                        xmin_inp->Render() | size(WIDTH, EQUAL, 10) | bgcolor(Color::RGB(50, 50, 50)),
+                        separatorEmpty(),
+                        xmax_inp->Render() | size(WIDTH, EQUAL, 10) | bgcolor(Color::RGB(50, 50, 50)),
+                    }),
+                    hbox({
+                        text("Y Range: "),
+                        ymin_inp->Render() | size(WIDTH, EQUAL, 10) | bgcolor(Color::RGB(50, 50, 50)),
+                        separatorEmpty(),
+                        ymax_inp->Render() | size(WIDTH, EQUAL, 10) | bgcolor(Color::RGB(50, 50, 50)),
+                    }),
+                    separatorEmpty(),
+                    autoscale_button->Render() | size(WIDTH, EQUAL, 12),
+                }) | borderEmpty,
+                separator(),
+                vbox({
+                    text("Series 1") | underlined,
+                    color1_menu->Render(),
+                }) | borderEmpty,
+            }) | border |
+                size(HEIGHT, EQUAL, 12),
+        });
     });
 
     // main program loop
     constexpr int POLL_PERIOD_MS = 50;
     Loop loop(&screen, main_renderer);
     while (!loop.HasQuitted()) {
+        y1.push_back(get_random(-1.0, 1.0));
+        y1.pop_front();
 
-	y1.push_back(get_random(-1.0, 1.0));
-	y1.pop_front();
+        y2.push_back(get_random(-1.0, 1.0)/2);
+        y2.pop_front();
 
-	screen.PostEvent(Event::Custom);
+        screen.PostEvent(Event::Custom);
 
-	loop.RunOnce();
-	std::this_thread::sleep_for(std::chrono::milliseconds(POLL_PERIOD_MS));
+        loop.RunOnce();
+        std::this_thread::sleep_for(std::chrono::milliseconds(POLL_PERIOD_MS));
     }
 
     return 0;
