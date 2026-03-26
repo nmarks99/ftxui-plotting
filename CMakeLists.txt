@@ -18,15 +18,6 @@ target_include_directories(ftxui-plot PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
-add_subdirectory(example)
-
-# find_package(ftxui REQUIRED)
-#
-# add_executable(example src/main.cpp src/plot.cpp)
-# target_include_directories(example PRIVATE src)
-#
-# target_link_libraries(example
-  # PRIVATE ftxui::screen
-  # PRIVATE ftxui::dom
-  # PRIVATE ftxui::component
-# )
+if (PROJECT_IS_TOP_LEVEL)
+    add_subdirectory(example)
+endif()
